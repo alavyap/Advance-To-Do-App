@@ -13,16 +13,12 @@
   <body>
     <div class="container">
       <div class="header">
-        <div class="search-bar">
-          <i class="fas fa-search"></i>
-          <input type="text" placeholder="Search for any training you want" />
-        </div>
         <div class="header-icons">
           <button class="icon-btn">
             <i class="fa-solid fa-bell-slash"></i>
           </button>
           <button class="icon-btn">
-            <i class="fa-solid fa-moon" style="font-size: 12px"></i>
+            <i class="fa-solid fa-moon"></i>
           </button>
           <!-- <i class="fa-regular fa-sun"></i> -->
         </div>
@@ -32,7 +28,7 @@
         <div class="title-section">
           <div class="greeting" id="greeting"></div>
           <h1>
-            You've <span class="task-count" id="taskCount">0</span> task out of
+            You've <span class="task-count" id="taskCount">0</span> tasks out of
             <span class="total-count" id="totalCount">0</span>
             <button class="add-btn" onclick="openModal()">
               <i class="fas fa-plus"></i> Add New
@@ -107,7 +103,7 @@
           </div>
           <div class="form-group">
             <label>Status</label>
-            <select id="taskStatus">
+            <select id="taskStatus" required>
               <option value="pending">Pending</option>
               <option value="progress">In Progress</option>
               <option value="completed">Completed</option>
@@ -115,15 +111,16 @@
           </div>
           <div class="form-group">
             <label>Priority</label>
-            <select id="taskPriority">
+            <select id="taskPriority" required>
               <option value="minor">Minor</option>
               <option value="normal">Normal</option>
               <option value="critical">Critical</option>
             </select>
           </div>
-          <div class="task-checkbox">
-            <span class="task-content">Focused Work</span>
-          </div>
+          <label class="focused-work-toggle">
+            <input type="checkbox" id="focusedWork" />
+            <span>Focused Work</span>
+          </label>
           <div class="modal-actions">
             <button
               type="button"

@@ -44,11 +44,11 @@ function updateGreeting() {
   let greet = "Good Morning";
   if (hour >= 12 && hour < 18) greet = "Good Afternoon";
   else if (hour >= 18) greet = "Good Evening";
-  document.getElementById("greeting").textContent = `${greet}, Codynn`;
+  document.getElementById("greeting").textContent = `${greet} !!`;
 }
 
 function saveData() {
-  localStorage.setItem("codynnflowTasks", JSON.stringify(tasks));
+  localStorage.setItem("todoTasks", JSON.stringify(tasks));
 }
 
 function renderTasks() {
@@ -119,6 +119,7 @@ function renderTasks() {
   const rate = total ? Math.round((completedCount / total) * 100) : 0;
 
   document.getElementById("taskCount").textContent = pending;
+  document.getElementById("totalCount").textContent = total;
   document.getElementById("totalTasks").textContent = total;
   document.getElementById("completedCount").textContent = completedCount;
   document.getElementById("pendingCount").textContent = pending;
