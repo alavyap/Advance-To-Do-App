@@ -14,8 +14,14 @@
     <div class="container">
       <div class="header">
         <div class="header-icons">
-          <button class="icon-btn">
-            <i class="fa-solid fa-bell-slash"></i>
+          <button
+            class="icon-btn"
+            id="focusModeBtn"
+            type="button"
+            aria-label="Toggle focused work"
+            aria-pressed="false"
+          >
+            <i class="fa-solid fa-fire"></i>
           </button>
           <button class="icon-btn">
             <i class="fa-solid fa-moon"></i>
@@ -28,10 +34,16 @@
         <div class="title-section">
           <div class="greeting" id="greeting"></div>
           <h1>
-            You've <span class="task-count" id="taskCount">0</span> tasks out of
+            You've <span class="task-count" id="taskCount">0</span> on Hold
+            tasks out of
             <span class="total-count" id="totalCount">0</span>
-            <button class="add-btn" onclick="openModal()">
-              <i class="fas fa-plus"></i> Add New
+            <button
+              class="add-btn"
+              id="addTaskBtn"
+              type="button"
+              onclick="openAddTaskModal()"
+            >
+              <i class="fas fa-plus"></i> Add Task
             </button>
           </h1>
         </div>
@@ -52,7 +64,7 @@
 
       <div class="sidebar">
         <div class="sidebar-section">
-          <h3 class="sidebar-title">Results Summary</h3>
+          <h3 class="sidebar-title">Task Insights</h3>
           <div class="stat-card">
             <div class="stat-label">Completion Rate</div>
             <div class="stat-value" id="completionRateValue">0%</div>

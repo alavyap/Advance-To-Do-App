@@ -1,8 +1,18 @@
+const STORAGE_KEY = "todoTasks";
+const FOCUSED_WORK_LIMIT = 3;
+const FOCUSED_WORK_LIMIT_MESSAGE =
+  "You have 3 focused tasks on hold. Complete at least one to add a new focused task.";
+
 let tasks = [],
-  editingId = null;
+  editingId = null,
+  focusedModeActive = false,
+  draggedTaskId = null,
+  dragTargetTaskId = null;
 
 function loadData() {
-  const saved = localStorage.getItem("codynnflowTasks");
+  const saved =
+    localStorage.getItem(STORAGE_KEY) ||
+    localStorage.getItem("codynnflowTasks");
   if (saved) tasks = JSON.parse(saved);
   else
     tasks = [
@@ -12,6 +22,7 @@ function loadData() {
         status: "pending",
         priority: "minor",
         completed: false,
+        focusedWork: false,
       },
       {
         id: 2,
@@ -19,6 +30,7 @@ function loadData() {
         status: "progress",
         priority: "normal",
         completed: false,
+        focusedWork: false,
       },
       {
         id: 3,
@@ -26,6 +38,7 @@ function loadData() {
         status: "pending",
         priority: "critical",
         completed: false,
+        focusedWork: false,
       },
       {
         id: 4,
@@ -33,6 +46,7 @@ function loadData() {
         status: "pending",
         priority: "minor",
         completed: false,
+        focusedWork: false,
       },
     ];
   updateGreeting();
@@ -48,19 +62,191 @@ function updateGreeting() {
 }
 
 function saveData() {
-  localStorage.setItem("todoTasks", JSON.stringify(tasks));
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
+}
+
+function getFocusedOnHoldCount(excludedId = null) {
+  return tasks.filter(
+    (task) => task.id !== excludedId && !task.completed && task.focusedWork,
+  ).length;
+}
+
+function ownsFocusedOnHoldSlot(id) {
+  const task = tasks.find((task) => task.id === id);
+  return Boolean(task && !task.completed && task.focusedWork);
+}
+
+function exceedsFocusedWorkLimit(id, status, focusedWork) {
+  return (
+    focusedWork &&
+    status !== "completed" &&
+    !ownsFocusedOnHoldSlot(id) &&
+    getFocusedOnHoldCount(id) >= FOCUSED_WORK_LIMIT
+  );
+}
+
+function showFocusedWorkLimitAlert() {
+  alert(FOCUSED_WORK_LIMIT_MESSAGE);
+}
+
+function updateFocusedModeControls() {
+  const focusModeBtn = document.getElementById("focusModeBtn");
+  const addTaskBtn = document.getElementById("addTaskBtn");
+
+  focusModeBtn.classList.toggle("active", focusedModeActive);
+  focusModeBtn.setAttribute("aria-pressed", focusedModeActive);
+  focusModeBtn.title = focusedModeActive
+    ? "Showing focused on-hold tasks"
+    : "Show focused on-hold tasks";
+
+  addTaskBtn.disabled = focusedModeActive;
+  addTaskBtn.title = focusedModeActive
+    ? "Turn off focused mode to add a task."
+    : "";
+}
+
+function updateFocusedWorkAvailability() {
+  const focusedWorkInput = document.getElementById("focusedWork");
+  const focusedWorkToggle = document.querySelector(".focused-work-toggle");
+  const status = document.getElementById("taskStatus").value;
+  const limitReached =
+    status !== "completed" &&
+    !ownsFocusedOnHoldSlot(editingId) &&
+    getFocusedOnHoldCount(editingId) >= FOCUSED_WORK_LIMIT;
+
+  focusedWorkInput.disabled = limitReached;
+  focusedWorkToggle.classList.toggle("disabled", limitReached);
+  focusedWorkToggle.title = limitReached ? FOCUSED_WORK_LIMIT_MESSAGE : "";
+
+  if (limitReached) focusedWorkInput.checked = false;
+}
+
+function renderAvatar(task) {
+  return `<div class="avatar">${task.focusedWork ? '<i class="fa-solid fa-fire"></i>' : ""}</div>`;
+}
+
+function getVisibleOnHoldTasks() {
+  const onHold = tasks.filter((task) => !task.completed);
+
+  return focusedModeActive ? onHold.filter((task) => task.focusedWork) : onHold;
+}
+
+function reorderVisibleOnHoldTasks(draggedId, targetId) {
+  if (!draggedId || !targetId || draggedId === targetId) return;
+
+  const visibleOnHold = getVisibleOnHoldTasks();
+  const fromIndex = visibleOnHold.findIndex((task) => task.id === draggedId);
+  const toIndex = visibleOnHold.findIndex((task) => task.id === targetId);
+
+  if (fromIndex === -1 || toIndex === -1) return;
+
+  const reorderedOnHold = [...visibleOnHold];
+  const [movedTask] = reorderedOnHold.splice(fromIndex, 1);
+  reorderedOnHold.splice(toIndex, 0, movedTask);
+
+  const visibleOnHoldIds = new Set(visibleOnHold.map((task) => task.id));
+  let nextVisibleIndex = 0;
+  tasks = tasks.map((task) =>
+    visibleOnHoldIds.has(task.id) ? reorderedOnHold[nextVisibleIndex++] : task,
+  );
+
+  renderTasks();
+}
+
+function clearDragStyles() {
+  document
+    .querySelectorAll(".task-item.dragging, .task-item.drag-over")
+    .forEach((taskItem) => {
+      taskItem.classList.remove("dragging", "drag-over");
+    });
+}
+
+function getTaskItemFromPoint(clientX, clientY) {
+  return document
+    .elementFromPoint(clientX, clientY)
+    ?.closest("#onHoldTasks .task-item");
+}
+
+function updateDragTarget(taskItem) {
+  document
+    .querySelectorAll("#onHoldTasks .task-item.drag-over")
+    .forEach((item) => item.classList.remove("drag-over"));
+
+  if (!taskItem) {
+    dragTargetTaskId = null;
+    return;
+  }
+
+  const targetId = Number(taskItem.dataset.taskId);
+  dragTargetTaskId = targetId;
+
+  if (targetId !== draggedTaskId) {
+    taskItem.classList.add("drag-over");
+  }
+}
+
+function handlePointerDragStart(event, id) {
+  if (event.button !== undefined && event.button !== 0) return;
+
+  event.preventDefault();
+  draggedTaskId = id;
+  dragTargetTaskId = null;
+  event.currentTarget.closest(".task-item").classList.add("dragging");
+  document.body.classList.add("task-dragging");
+
+  document.addEventListener("pointermove", handlePointerDragMove);
+  document.addEventListener("pointerup", handlePointerDragEnd);
+  document.addEventListener("pointercancel", handlePointerDragCancel);
+}
+
+function handlePointerDragMove(event) {
+  if (!draggedTaskId) return;
+
+  event.preventDefault();
+  updateDragTarget(getTaskItemFromPoint(event.clientX, event.clientY));
+}
+
+function handlePointerDragEnd(event) {
+  event.preventDefault();
+  const droppedTaskId = draggedTaskId;
+  const droppedOnTaskId =
+    dragTargetTaskId ||
+    Number(getTaskItemFromPoint(event.clientX, event.clientY)?.dataset.taskId);
+
+  document.removeEventListener("pointermove", handlePointerDragMove);
+  document.removeEventListener("pointerup", handlePointerDragEnd);
+  document.removeEventListener("pointercancel", handlePointerDragCancel);
+  document.body.classList.remove("task-dragging");
+  clearDragStyles();
+  draggedTaskId = null;
+  dragTargetTaskId = null;
+
+  reorderVisibleOnHoldTasks(droppedTaskId, droppedOnTaskId);
+}
+
+function handlePointerDragCancel() {
+  document.removeEventListener("pointermove", handlePointerDragMove);
+  document.removeEventListener("pointerup", handlePointerDragEnd);
+  document.removeEventListener("pointercancel", handlePointerDragCancel);
+  document.body.classList.remove("task-dragging");
+  clearDragStyles();
+  draggedTaskId = null;
+  dragTargetTaskId = null;
 }
 
 function renderTasks() {
-  const onHold = tasks.filter((t) => !t.completed);
+  const visibleOnHold = getVisibleOnHoldTasks();
   const completed = tasks.filter((t) => t.completed);
 
   // Render On Hold Tasks
-  document.getElementById("onHoldTasks").innerHTML = onHold.length
-    ? onHold
+  document.getElementById("onHoldTasks").innerHTML = visibleOnHold.length
+    ? visibleOnHold
         .map(
           (t) => `
-            <div class="task-item">
+            <div class="task-item" data-task-id="${t.id}">
+                <div class="draggable" onpointerdown="handlePointerDragStart(event, ${t.id})" title="Drag to reorder">
+                    <i class="fas fa-grip-lines"></i>
+                </div>
                 <div class="task-checkbox ${t.completed ? "completed" : ""}" onclick="toggleTask(${t.id})"></div>
                 <div class="task-content">
                     <div class="task-title ${t.completed ? "completed" : ""}">${t.title}</div>
@@ -71,7 +257,7 @@ function renderTasks() {
                 <div class="priority-badge priority-${t.priority}">
                     <i class="fas fa-circle"></i> ${t.priority.charAt(0).toUpperCase() + t.priority.slice(1)}
                 </div>
-                <div class="avatar"><i class="fa-solid fa-fire"></i></div>
+                ${renderAvatar(t)}
                 <button class="icon-btn" style="width:30px;height:30px;" onclick="editTask(${t.id})">
                     <i class="fas fa-pencil" style="font-size:12px;"></i>
                 </button>
@@ -83,7 +269,9 @@ function renderTasks() {
         `,
         )
         .join("")
-    : '<p style="color:#9ca3af;padding:20px;">No tasks on hold</p>';
+    : `<p style="color:#9ca3af;padding:20px;">${
+        focusedModeActive ? "No focused tasks on hold" : "No tasks on hold"
+      }</p>`;
 
   // Render Completed Tasks
   document.getElementById("completedTasks").innerHTML = completed.length
@@ -99,7 +287,7 @@ function renderTasks() {
                 <div class="priority-badge priority-${t.priority}">
                     <i class="fas fa-circle"></i> ${t.priority.charAt(0).toUpperCase() + t.priority.slice(1)}
                 </div>
-                <div class="avatar"><i class="fa-solid fa-fire"></i></div>
+                ${renderAvatar(t)}
                 <button class="icon-btn" style="width:30px;height:30px;" onclick="editTask(${t.id})">
                     <i class="fas fa-pencil" style="font-size:12px;"></i>
                 </button>
@@ -116,9 +304,10 @@ function renderTasks() {
   const total = tasks.length;
   const completedCount = tasks.filter((t) => t.completed).length;
   const pending = total - completedCount;
+  const visiblePending = focusedModeActive ? visibleOnHold.length : pending;
   const rate = total ? Math.round((completedCount / total) * 100) : 0;
 
-  document.getElementById("taskCount").textContent = pending;
+  document.getElementById("taskCount").textContent = visiblePending;
   document.getElementById("totalCount").textContent = total;
   document.getElementById("totalTasks").textContent = total;
   document.getElementById("completedCount").textContent = completedCount;
@@ -128,11 +317,21 @@ function renderTasks() {
   document.getElementById("completionProgress").style.width = rate + "%";
 
   saveData();
+  updateFocusedModeControls();
 }
 
 function toggleTask(id) {
   const t = tasks.find((t) => t.id === id);
   if (t) {
+    if (
+      t.completed &&
+      t.focusedWork &&
+      getFocusedOnHoldCount(t.id) >= FOCUSED_WORK_LIMIT
+    ) {
+      showFocusedWorkLimitAlert();
+      return;
+    }
+
     t.completed = !t.completed;
     t.status = t.completed ? "completed" : "pending";
     renderTasks();
@@ -146,8 +345,15 @@ function deleteTask(id) {
   }
 }
 
+function openAddTaskModal() {
+  if (focusedModeActive) return;
+
+  openModal();
+}
+
 function openModal() {
   document.getElementById("taskModal").classList.add("active");
+  updateFocusedWorkAvailability();
 }
 function closeModal() {
   document.getElementById("taskModal").classList.remove("active");
@@ -160,12 +366,21 @@ document.getElementById("taskForm").addEventListener("submit", (e) => {
   const title = document.getElementById("taskTitle").value;
   const status = document.getElementById("taskStatus").value;
   const priority = document.getElementById("taskPriority").value;
+  const focusedWork = document.getElementById("focusedWork").checked;
+
+  if (exceedsFocusedWorkLimit(editingId, status, focusedWork)) {
+    showFocusedWorkLimitAlert();
+    updateFocusedWorkAvailability();
+    return;
+  }
+
   if (editingId) {
     const t = tasks.find((t) => t.id === editingId);
     t.title = title;
     t.status = status;
     t.priority = priority;
     t.completed = status === "completed";
+    t.focusedWork = focusedWork;
   } else {
     tasks.push({
       id: Date.now(),
@@ -173,6 +388,7 @@ document.getElementById("taskForm").addEventListener("submit", (e) => {
       status,
       priority,
       completed: status === "completed",
+      focusedWork,
     });
   }
   renderTasks();
@@ -186,8 +402,26 @@ function editTask(id) {
     document.getElementById("taskTitle").value = t.title;
     document.getElementById("taskStatus").value = t.status;
     document.getElementById("taskPriority").value = t.priority;
+    document.getElementById("focusedWork").checked = Boolean(t.focusedWork);
     openModal();
   }
 }
+
+document
+  .getElementById("taskStatus")
+  .addEventListener("change", updateFocusedWorkAvailability);
+
+document.querySelector(".focused-work-toggle").addEventListener("click", () => {
+  const focusedWorkInput = document.getElementById("focusedWork");
+
+  if (focusedWorkInput.disabled) {
+    showFocusedWorkLimitAlert();
+  }
+});
+
+document.getElementById("focusModeBtn").addEventListener("click", () => {
+  focusedModeActive = !focusedModeActive;
+  renderTasks();
+});
 
 loadData();
