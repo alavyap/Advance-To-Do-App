@@ -3,6 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light dark" />
     <title>Focused Todo</title>
     <link
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
@@ -23,10 +24,15 @@
           >
             <i class="fa-solid fa-fire"></i>
           </button>
-          <button class="icon-btn">
+          <button
+            class="icon-btn theme-toggle"
+            id="themeToggleBtn"
+            type="button"
+            aria-label="Switch to dark theme"
+            aria-pressed="false"
+          >
             <i class="fa-solid fa-moon"></i>
           </button>
-          <!-- <i class="fa-regular fa-sun"></i> -->
         </div>
       </div>
 
@@ -34,8 +40,8 @@
         <div class="title-section">
           <div class="greeting" id="greeting"></div>
           <h1>
-            You've <span class="task-count" id="taskCount">0</span> taks on Hold
-            out of
+            You've <span class="task-count" id="taskCount">0</span> tasks on
+            Hold out of
             <span class="total-count" id="totalCount">0</span>
             <button
               class="add-btn"
@@ -65,35 +71,63 @@
       <div class="sidebar">
         <div class="sidebar-section">
           <h3 class="sidebar-title">Task Insights</h3>
-          <div class="stat-card">
+          <div class="stat-card circular-stat-card">
             <div class="stat-label">Completion Rate</div>
-            <div class="stat-value" id="completionRateValue">0%</div>
-            <div class="progress-bar">
-              <div
-                class="progress-fill"
-                id="completionProgress"
-                style="width: 0%"
-              ></div>
+            <div
+              class="circular-progress"
+              id="completionProgress"
+              style="--progress: 0deg; --accent: #8b5cf6"
+              aria-label="Completion rate"
+            >
+              <div class="circular-progress-inner">
+                <div class="stat-value" id="completionRateValue">0%</div>
+              </div>
             </div>
           </div>
-          <div class="stat-card">
-            <div class="stat-label">Total Tasks</div>
-            <div class="stat-value" id="totalTasks">0</div>
-            <div class="progress-bar">
-              <div
-                class="progress-fill"
-                id="totalProgress"
-                style="width: 0%"
-              ></div>
+          <div class="stat-card circular-stat-card">
+            <div class="stat-label"><b>Completed Tasks</b></div>
+            <div
+              class="circular-progress"
+              id="completedProgress"
+              style="--progress: 0deg; --accent: #10b981"
+              aria-label="Completed tasks"
+            >
+              <div class="circular-progress-inner">
+                <div class="stat-value" id="completedCount">0</div>
+                <span class="circle-caption">Done</span>
+              </div>
             </div>
           </div>
-          <div class="stat-card">
-            <div class="stat-label">Completed</div>
-            <div class="stat-value" id="completedCount">0</div>
+          <div class="stat-card circular-stat-card">
+            <div class="stat-label"><b>Pending Tasks</b></div>
+            <div
+              class="circular-progress"
+              id="pendingProgress"
+              style="--progress: 0deg; --accent: #f59e0b"
+              aria-label="Pending tasks"
+            >
+              <div class="circular-progress-inner">
+                <div class="stat-value" id="pendingCount">0</div>
+                <span class="circle-caption">Left</span>
+              </div>
+            </div>
           </div>
-          <div class="stat-card">
-            <div class="stat-label">Pending</div>
-            <div class="stat-value" id="pendingCount">0</div>
+          <div class="stat-card task-summary-card">
+            <div class="summary-row summary-total">
+              <span class="summary-dot"></span>
+              <span>Total Tasks</span>
+              <strong id="totalTasks">0</strong>
+            </div>
+            <div class="summary-row summary-completed">
+              <span class="summary-dot"></span>
+              <span>Completed</span>
+              <strong id="completedSummaryCount">0</strong>
+            </div>
+            <div class="summary-row summary-pending">
+              <span class="summary-dot"></span>
+              <span>Pending</span>
+              <strong id="pendingSummaryCount">0</strong>
+            </div>
           </div>
         </div>
       </div>

@@ -1,4 +1,6 @@
 const STORAGE_KEY = "todoTasks";
+const THEME_STORAGE_KEY = "todoTheme";
+const FOCUSED_MODE_STORAGE_KEY = "focusedModeActive";
 const FOCUSED_WORK_LIMIT = 3;
 const FOCUSED_WORK_LIMIT_MESSAGE =
   "You have 3 focused tasks on hold. Complete at least one to add a new focused task.";
@@ -13,46 +15,63 @@ let tasks = [],
   draggedTaskId = null,
   dragTargetTaskId = null;
 
+function getPreferredTheme() {
+  const savedTheme = localStorage.getItem(THEME_STORAGE_KEY);
+
+  if (savedTheme === "dark" || savedTheme === "light") {
+    return savedTheme;
+  }
+
+  return window.matchMedia("(prefers-color-scheme: dark)").matches
+    ? "dark"
+    : "light";
+}
+
+function applyTheme(theme) {
+  const isDark = theme === "dark";
+  const themeToggleBtn = document.getElementById("themeToggleBtn");
+
+  document.body.classList.toggle("dark-theme", isDark);
+  themeToggleBtn.setAttribute(
+    "aria-label",
+    isDark ? "Switch to light theme" : "Switch to dark theme",
+  );
+  themeToggleBtn.setAttribute("aria-pressed", isDark);
+  themeToggleBtn.title = isDark
+    ? "Switch to light theme"
+    : "Switch to dark theme";
+  themeToggleBtn.innerHTML = `<i class="fa-solid ${
+    isDark ? "fa-sun" : "fa-moon"
+  }"></i>`;
+}
+
+function setTheme(theme) {
+  localStorage.setItem(THEME_STORAGE_KEY, theme);
+  applyTheme(theme);
+}
+
+function toggleTheme() {
+  setTheme(document.body.classList.contains("dark-theme") ? "light" : "dark");
+}
+
+function loadFocusedMode() {
+  focusedModeActive = localStorage.getItem(FOCUSED_MODE_STORAGE_KEY) === "true";
+}
+
+function saveFocusedMode() {
+  localStorage.setItem(FOCUSED_MODE_STORAGE_KEY, focusedModeActive);
+}
+
 function loadData() {
   const saved =
-    localStorage.getItem(STORAGE_KEY) ||
-    localStorage.getItem("codynnflowTasks");
-  if (saved) tasks = JSON.parse(saved);
-  else
-    tasks = [
-      {
-        id: 1,
-        title: "Evaluate the addition and deletion of user IDs",
-        status: "pending",
-        priority: "minor",
-        completed: false,
-        focusedWork: false,
-      },
-      {
-        id: 2,
-        title: "Identify the implementation team",
-        status: "progress",
-        priority: "normal",
-        completed: false,
-        focusedWork: false,
-      },
-      {
-        id: 3,
-        title: "Batch schedule download/process",
-        status: "pending",
-        priority: "critical",
-        completed: false,
-        focusedWork: false,
-      },
-      {
-        id: 4,
-        title: "Monitor system performance and adjust hardware",
-        status: "pending",
-        priority: "minor",
-        completed: false,
-        focusedWork: false,
-      },
-    ];
+    localStorage.getItem(STORAGE_KEY) || localStorage.getItem("todoData");
+  if (saved)
+    try {
+      tasks = JSON.parse(saved) || [];
+    } catch {
+      tasks = [];
+    }
+  else tasks = [];
   updateGreeting();
   renderTasks();
 }
@@ -75,9 +94,27 @@ function getFocusedOnHoldCount(excludedId = null) {
   ).length;
 }
 
+function getOnHoldCount(excludedId = null) {
+  return tasks.filter((task) => task.id !== excludedId && !task.completed)
+    .length;
+}
+
+function ownsOnHoldSlot(id) {
+  const task = tasks.find((task) => task.id === id);
+  return Boolean(task && !task.completed);
+}
+
 function ownsFocusedOnHoldSlot(id) {
   const task = tasks.find((task) => task.id === id);
   return Boolean(task && !task.completed && task.focusedWork);
+}
+
+function exceedsOnHoldLimit(id, status) {
+  return (
+    status !== "completed" &&
+    !ownsOnHoldSlot(id) &&
+    getOnHoldCount(id) >= ON_HOLD_LIMIT
+  );
 }
 
 function exceedsFocusedWorkLimit(id, status, focusedWork) {
@@ -93,27 +130,49 @@ function showFocusedWorkLimitAlert() {
   alert(FOCUSED_WORK_LIMIT_MESSAGE);
 }
 
+function showOnHoldLimitAlert() {
+  alert(ON_HOLD_LIMIT_MESSAGE);
+}
+
+function setDisabled(elements, disabled, title = "") {
+  elements.forEach((el) => {
+    el.disabled = disabled;
+
+    if ("title" in el) {
+      el.title = disabled ? title : "";
+    }
+  });
+}
+
 function updateFocusedModeControls() {
+  const isFocused = focusedModeActive;
+  const onHoldLimitReached = getOnHoldCount() >= ON_HOLD_LIMIT;
+
   const focusModeBtn = document.getElementById("focusModeBtn");
   const addTaskBtn = document.getElementById("addTaskBtn");
 
-  focusModeBtn.classList.toggle("active", focusedModeActive);
-  focusModeBtn.setAttribute("aria-pressed", focusedModeActive);
-  focusModeBtn.title = focusedModeActive
+  // Focus mode button
+  focusModeBtn.classList.toggle("active", isFocused);
+  focusModeBtn.setAttribute("aria-pressed", isFocused);
+  focusModeBtn.title = isFocused
     ? "Showing focused on-hold tasks"
     : "Show focused on-hold tasks";
 
-  // Disable the add new task, edit,delete button and the draggable elements when focused mode is active to prevent editing non-focused tasks
-  addTaskBtn.disabled = focusedModeActive;
-  addTaskBtn.title = focusedModeActive
-    ? "Turn off focused mode to add a task."
-    : "";
+  // Disable buttons
+  setDisabled(
+    [...document.querySelectorAll(".task-item .icon-btn")],
+    isFocused,
+    "Turn off focused mode to edit tasks.",
+  );
+  setDisabled(
+    [addTaskBtn],
+    isFocused || onHoldLimitReached,
+    isFocused ? "Turn off focused mode to edit tasks." : ON_HOLD_LIMIT_MESSAGE,
+  );
 
-  document.querySelectorAll(".task-item .icon-btn").forEach((btn) => {
-    btn.disabled = focusedModeActive;
-  });
-  document.querySelectorAll(".task-item .draggable").forEach((drag) => {
-    drag.style.pointerEvents = focusedModeActive ? "none" : "auto";
+  // Disable dragging
+  document.querySelectorAll(".task-item .draggable").forEach((el) => {
+    el.style.pointerEvents = isFocused ? "none" : "";
   });
 }
 
@@ -281,7 +340,7 @@ function renderTasks() {
         `,
         )
         .join("")
-    : `<p style="color:#9ca3af;padding:20px;">${
+    : `<p class="empty-state">${
         focusedModeActive ? "No focused tasks on hold" : "No tasks on hold"
       }</p>`;
 
@@ -310,7 +369,7 @@ function renderTasks() {
         `,
         )
         .join("")
-    : '<p style="color:#9ca3af;padding:20px;">No completed tasks</p>';
+    : '<p class="empty-state">No completed tasks</p>';
 
   // Update Sidebar Stats
   const total = tasks.length;
@@ -324,9 +383,24 @@ function renderTasks() {
   document.getElementById("totalTasks").textContent = total;
   document.getElementById("completedCount").textContent = completedCount;
   document.getElementById("pendingCount").textContent = pending;
+  document.getElementById("completedSummaryCount").textContent = completedCount;
+  document.getElementById("pendingSummaryCount").textContent = pending;
   document.getElementById("completionRateValue").textContent = rate + "%";
-  document.getElementById("totalProgress").style.width = rate + "%";
-  document.getElementById("completionProgress").style.width = rate + "%";
+  document
+    .getElementById("completionProgress")
+    .style.setProperty("--progress", `${rate * 3.6}deg`);
+  document
+    .getElementById("completedProgress")
+    .style.setProperty(
+      "--progress",
+      `${total ? (completedCount / total) * 360 : 0}deg`,
+    );
+  document
+    .getElementById("pendingProgress")
+    .style.setProperty(
+      "--progress",
+      `${total ? (pending / total) * 360 : 0}deg`,
+    );
 
   saveData();
   updateFocusedModeControls();
@@ -335,6 +409,11 @@ function renderTasks() {
 function toggleTask(id) {
   const t = tasks.find((t) => t.id === id);
   if (t) {
+    if (t.completed && exceedsOnHoldLimit(t.id, "pending")) {
+      showOnHoldLimitAlert();
+      return;
+    }
+
     if (
       t.completed &&
       t.focusedWork &&
@@ -351,6 +430,7 @@ function toggleTask(id) {
 }
 
 function deleteTask(id) {
+  if (focusedModeActive) return;
   if (confirm("Are you sure you want to delete this task?")) {
     tasks = tasks.filter((t) => t.id !== id);
     renderTasks();
@@ -359,6 +439,11 @@ function deleteTask(id) {
 
 function openAddTaskModal() {
   if (focusedModeActive) return;
+
+  if (getOnHoldCount() >= ON_HOLD_LIMIT) {
+    showOnHoldLimitAlert();
+    return;
+  }
 
   openModal();
 }
@@ -379,6 +464,11 @@ document.getElementById("taskForm").addEventListener("submit", (e) => {
   const status = document.getElementById("taskStatus").value;
   const priority = document.getElementById("taskPriority").value;
   const focusedWork = document.getElementById("focusedWork").checked;
+
+  if (exceedsOnHoldLimit(editingId, status)) {
+    showOnHoldLimitAlert();
+    return;
+  }
 
   if (exceedsFocusedWorkLimit(editingId, status, focusedWork)) {
     showFocusedWorkLimitAlert();
@@ -410,6 +500,7 @@ document.getElementById("taskForm").addEventListener("submit", (e) => {
 function editTask(id) {
   editingId = id;
   const t = tasks.find((t) => t.id === id);
+  if (focusedModeActive) return;
   if (t) {
     document.getElementById("taskTitle").value = t.title;
     document.getElementById("taskStatus").value = t.status;
@@ -433,7 +524,14 @@ document.querySelector(".focused-work-toggle").addEventListener("click", () => {
 
 document.getElementById("focusModeBtn").addEventListener("click", () => {
   focusedModeActive = !focusedModeActive;
+  saveFocusedMode();
   renderTasks();
 });
 
+document
+  .getElementById("themeToggleBtn")
+  .addEventListener("click", toggleTheme);
+
+applyTheme(getPreferredTheme());
+loadFocusedMode();
 loadData();
