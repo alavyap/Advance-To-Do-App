@@ -3,6 +3,10 @@ const FOCUSED_WORK_LIMIT = 3;
 const FOCUSED_WORK_LIMIT_MESSAGE =
   "You have 3 focused tasks on hold. Complete at least one to add a new focused task.";
 
+const ON_HOLD_LIMIT = 10;
+const ON_HOLD_LIMIT_MESSAGE =
+  "You can only have 10 tasks on hold. Please complete or delete some tasks to add new ones.";
+
 let tasks = [],
   editingId = null,
   focusedModeActive = false,
@@ -99,10 +103,18 @@ function updateFocusedModeControls() {
     ? "Showing focused on-hold tasks"
     : "Show focused on-hold tasks";
 
+  // Disable the add new task, edit,delete button and the draggable elements when focused mode is active to prevent editing non-focused tasks
   addTaskBtn.disabled = focusedModeActive;
   addTaskBtn.title = focusedModeActive
     ? "Turn off focused mode to add a task."
     : "";
+
+  document.querySelectorAll(".task-item .icon-btn").forEach((btn) => {
+    btn.disabled = focusedModeActive;
+  });
+  document.querySelectorAll(".task-item .draggable").forEach((drag) => {
+    drag.style.pointerEvents = focusedModeActive ? "none" : "auto";
+  });
 }
 
 function updateFocusedWorkAvailability() {

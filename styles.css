@@ -230,7 +230,7 @@ body.task-dragging {
 }
 .task-title.completed {
   text-decoration: line-through;
-  color: #9ca3af;
+  color: #8c8d90;
 }
 .status-badge {
   padding: 6px 16px;
