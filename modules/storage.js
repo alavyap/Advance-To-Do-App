@@ -45,6 +45,12 @@ export function getPreferredTheme() {
     : "light";
 }
 
+// Check whether the user has chosen a theme manually
+export function hasSavedThemePreference() {
+  const savedTheme = localStorage.getItem(THEME_STORAGE_KEY);
+  return savedTheme === "dark" || savedTheme === "light";
+}
+
 // Save theme preference to storage
 export function saveTheme(theme) {
   localStorage.setItem(THEME_STORAGE_KEY, theme);

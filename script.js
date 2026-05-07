@@ -10,7 +10,11 @@ import {
   updateGreeting,
   loadFocusedMode,
 } from "./modules/storage.js";
-import { applyTheme, toggleTheme } from "./modules/theme.js";
+import {
+  applyTheme,
+  syncThemeWithSystemDefault,
+  toggleTheme,
+} from "./modules/theme.js";
 import { toggleFocusedMode } from "./modules/focusedMode.js";
 import { setFocusedModeActive } from "./modules/state.js";
 import {
@@ -74,6 +78,7 @@ function setupEventListeners() {
 function initialize() {
   // 1. Load and apply theme
   applyTheme(getPreferredTheme());
+  syncThemeWithSystemDefault();
 
   // 2. Load focused mode state
   setFocusedModeActive(loadFocusedMode());

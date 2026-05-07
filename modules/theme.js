@@ -1,6 +1,6 @@
 // theme.js - Theme management and switching
 
-import { saveTheme } from "./storage.js";
+import { hasSavedThemePreference, saveTheme } from "./storage.js";
 
 export function applyTheme(theme) {
   const isDark = theme === "dark";
@@ -25,6 +25,22 @@ export function applyTheme(theme) {
 export function setTheme(theme) {
   saveTheme(theme);
   applyTheme(theme);
+}
+
+export function syncThemeWithSystemDefault() {
+  const systemTheme = window.matchMedia("(prefers-color-scheme: dark)");
+
+  const applySystemTheme = (event) => {
+    if (!hasSavedThemePreference()) {
+      applyTheme(event.matches ? "dark" : "light");
+    }
+  };
+
+  if (systemTheme.addEventListener) {
+    systemTheme.addEventListener("change", applySystemTheme);
+  } else {
+    systemTheme.addListener(applySystemTheme);
+  }
 }
 
 export function toggleTheme() {
