@@ -2,7 +2,7 @@
 
 A clean, focused task manager built with vanilla HTML, CSS, and JavaScript. It helps you keep a short, intentional task list with priority labels, completion stats, drag-and-drop ordering, focused work mode, and light/dark theme support.
 
-![Focused Todo app preview](assets/focused-todo-preview.png)
+![Advance Todo app preview](assets/Advance_Todo.jpg)
 
 ## ✨ Features
 
@@ -45,7 +45,7 @@ http://127.0.0.1:5173/index.html
 ```text
 .
 ├── assets/
-│   └── focused-todo-preview.png
+│   └── advance-todo-preview.png
 ├── index.html
 ├── styles.css
 ├── script.js
@@ -76,9 +76,9 @@ The app is split into small modules:
 - `dragDrop.js` handles task reordering
 - `theme.js` applies light/dark theme behavior
 
-## 💡 Why Focused Todo?
+## 💡 Why Advance Todo?
 
-Focused Todo is designed for a simple workflow: keep only what matters visible, finish work intentionally, and quickly understand your progress at a glance.
+Advance Todo is designed for a simple workflow: keep only what matters visible, finish work intentionally, and quickly understand your progress at a glance.
 
 ## 📄 License
 
