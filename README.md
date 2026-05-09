@@ -24,12 +24,20 @@ A clean, focused task manager built with vanilla HTML, CSS, and JavaScript. It h
 - Font Awesome icons
 - Browser `localStorage`
 
+## 🌍 Live At
+
+```
+https://advance-todo.alavyapandey.com/
+```
+
 ## 🚀 Run Locally
 
 Clone or download the project, then open it with a local server:
 
 ```bash
 python3 -m http.server 5173
+            or
+use any extension for live server
 ```
 
 Then visit:
