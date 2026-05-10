@@ -26,9 +26,7 @@ A clean, focused task manager built with vanilla HTML, CSS, and JavaScript. It h
 
 ## 🌍 Live At
 
-```
-https://advance-todo.alavyapandey.com/
-```
+[Advance To Do](https://advance-todo.alavyapandey.com/)
 
 ## 🚀 Run Locally
 
