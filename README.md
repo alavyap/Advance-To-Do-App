@@ -24,7 +24,9 @@ A clean, focused task manager built with vanilla HTML, CSS, and JavaScript. It h
 - Font Awesome icons
 - Browser `localStorage`
 
-## 🌍 Live At :: [Advance To Do](https://advance-todo.alavyapandey.com/)
+## 🌍 Live At
+
+[Advance To Do](https://advance-todo.alavyapandey.com/)
 
 ## 🚀 Run Locally
 
